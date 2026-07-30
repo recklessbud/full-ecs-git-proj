@@ -8,7 +8,7 @@ resource "random_password" "suffix" {
 
 
 resource "aws_security_group" "ecs_tasks" {
-  name        = "${var.project_name}-ecs-tasks-${random_password.suffix.result}"
+  name        = "${var.project_name}-ecs-tasks2-${random_password.suffix.result}"
   description = "Security group for ECS Fargate tasks"
   vpc_id      = var.vpc_id
 
@@ -21,13 +21,13 @@ resource "aws_security_group" "ecs_tasks" {
     cidr_blocks = var.allowed_cidr_blocks
   }
 
-  ingress{
-    description = "TCP"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+  # ingress{
+  #   description = "TCP"
+  #   from_port   = 80
+  #   to_port     = 80
+  #   protocol    = "tcp"
+  #   cidr_blocks = ["0.0.0.0/0"]
+  # }
 
   # Outbound rules for internet access (required for Fargate)
   egress {
