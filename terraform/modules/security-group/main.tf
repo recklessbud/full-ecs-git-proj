@@ -41,4 +41,4 @@ resource "aws_security_group" "ecs_tasks" {
   tags = {
     Name = "${var.project_name}-ecs-tasks-${random_password.suffix.result}"
   }
-}
+} 
