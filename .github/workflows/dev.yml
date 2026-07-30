@@ -52,6 +52,9 @@ jobs:
       - name: Terraform init
         run: terraform -chdir=terraform init -input=false
 
+      - name: terraform destroy
+        run: terraform -chdir=terraform destroy -auto-approve
+
       - name: Terraform format check
         run: terraform -chdir=terraform fmt -check
 
