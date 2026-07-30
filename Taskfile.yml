@@ -10,7 +10,8 @@ tasks:
   ecr-login:
     desc:  "login to ecr"
     cmds:
-      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL 
+      - aws ecr get-login-password --region us-east-1 | \ 
+        docker login --username AWS --password-stdin $ECR_REPOSITORY_URL 
     silent: true
   docker-build-push:
     desc: "build and push docker image"
@@ -23,7 +24,9 @@ tasks:
   terraform-reapply:
     desc: "terraform reapply"
     cmds:
-      - terraform -chdir=terraform apply -auto-approve -var="container_image=$ECR_REPOSITORY_URL/running-containers-fargate-app-repo:latest" -var="container_port=3000"
+      - terraform -chdir=terraform apply -auto-approve  \ 
+       -var="container_image=$ECR_REPOSITORY_URL/running-containers-fargate-app-repo:latest" \ 
+       -var="container_port=3000"
     silent: true
 
   ci:
