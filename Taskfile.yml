@@ -10,8 +10,7 @@ tasks:
   ecr-login:
     desc:  "login to ecr"
     cmds:
-      - aws ecr get-login-password --region us-east-1 | \ 
-        docker login --username AWS --password-stdin $ECR_REPOSITORY_URL 
+      - aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL 
     silent: true
   docker-build-push:
     desc: "build and push docker image"
