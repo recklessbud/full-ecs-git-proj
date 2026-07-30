@@ -39,5 +39,5 @@ module "container_fargate" {
   fargate_security_group = module.security_group.fargate_security_group
   health_check_path      = var.health_check_path
   container_port         = var.container_port
-  container_image = var.container_image
+  container_image        = var.container_image
 }
