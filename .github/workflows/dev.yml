@@ -1,69 +1,75 @@
 name: full-ecs-github
-on:
-    push:
-        branches:
-            - main
 
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v4
+  build:
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "true"
 
-            - uses: hashicorp/setup-terraform@v4
-              with:
-                terraform_wrapper: false
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: COnfigure AWS credentials
-              uses: aws-actions/configure-aws-credentials@v4
-              with:
-                aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-                aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-                aws-region: ${{ secrets.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.8.5
+          terraform_wrapper: false
 
-            - name: login docker
-              uses: docker/login-action@v3
-              with:
-                username: ${{ secrets.DOCKER_USERNAME }}
-                password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-            - name: Fetch full history
-              run: git fetch --prune --unshallow
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-            - name: Set up Python 3.10
-              uses: actions/setup-python@v4
-              with:
-                    python-version: "3.10"
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
 
-            - name: Set up Node.js
-              uses: actions/setup-node@v3
-              with:
-                  node-version: '18'
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
 
-            - name: install task
-              run: npm install -g @go-task/cli
+      - name: Install Task
+        run: npm install -g @go-task/cli
 
-            - name: terraform init
-              run: terraform  -chdir=terraform init
+      - name: Terraform init
+        run: terraform -chdir=terraform init -input=false
 
+      - name: Terraform format check
+        run: terraform -chdir=terraform fmt -check -recursive
 
-            - name: terraform format
-              run: terraform -chdir=terraform fmt -check
+      - name: Terraform validate
+        run: terraform -chdir=terraform validate
 
-            - name: terraform validate
-              run: terraform -chdir=terraform validate
+      - name: Terraform plan
+        run: |
+          terraform -chdir=terraform plan -input=false -no-color -out=tfplan \
+            -var="container_image=nginx:latest" \
+            -var="container_port=80"
 
-            - name: terraform plan
-              run: |
-                terraform -chdir=terraform plan -out=tfplan -var="container_image=nginx:latest" -var="container_port=80"
+      - name: Terraform apply
+        run: terraform -chdir=terraform apply -input=false -auto-approve tfplan
 
-            - name: terraform apply
-              run: terraform -chdir=terraform apply tfplan -auto-approve
+      - name: Export Terraform outputs
+        run: |
+          echo "ECR_REPOSITORY_URL=$(terraform -chdir=terraform output -raw ecr_repository_url)" >> "$GITHUB_ENV"
 
-            - name: Exports terraform outputs
-              run: |
-                echo "ECR_REPOSITORY_URL=$(terraform -chdir=terraform output -raw ecr_repository_url)" >> $GITHUB_ENV
-
-            - name: run taskfile
-              run: task ci
+      - name: Run Taskfile
+        run: task ci
