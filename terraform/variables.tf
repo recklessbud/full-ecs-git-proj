@@ -23,7 +23,6 @@ variable "project_name" {
 variable "container_image" {
   description = "container image URI to deploy"
   type        = string
-  default     = "nginx:latest"
 }
 
 variable "task_cpu" {
@@ -49,7 +48,6 @@ variable "task_memory" {
 variable "container_port" {
   description = "container port"
   type        = number
-  default     = 80
 }
 
 
