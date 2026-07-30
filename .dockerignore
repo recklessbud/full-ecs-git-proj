@@ -1,0 +1,12 @@
+.git
+.env
+*.pyc
+__pycache__
+.pytest_cache
+.coverage
+*.egg-info
+dist/
+.venv/
+node_modules/
+terraform
+*.terraform
