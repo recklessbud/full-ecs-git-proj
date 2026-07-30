@@ -45,10 +45,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "18"
-      - name: Check Docker
-        run: |
-            which docker
-            docker --version
 
       - name: Install Task
         run: npm install -g @go-task/cli

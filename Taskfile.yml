@@ -7,6 +7,11 @@ tasks:
       - echo "Houston ready for take off🚀🚀"
     silent: true
 
+  Check-Docker:
+    desc: "check docker"
+    cmds:
+      - which docker
+      - docker --version
   ecr-login:
     desc:  "login to ecr"
     cmds:
