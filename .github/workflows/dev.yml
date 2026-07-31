@@ -19,7 +19,41 @@ permissions:
   contents: read
 
 jobs:
-  build:
+  destroy:
+    if: github.event.inputs.action == 'destroy'
+    runs-on: ubuntu-latest
+    env:
+      TF_IN_AUTOMATION: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.8.5
+          terraform_wrapper: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Terraform init
+        run: terraform -chdir=terraform init -input=false
+
+      - name: Terraform destroy
+        run: |
+          terraform -chdir=terraform destroy -auto-approve \
+            -var="container_image=nginx:latest" \
+            -var="container_port=80"
+
+  # ─────────────────────────────────────────────
+  # JOB 2: deploy — runs on push OR manual apply
+  # ─────────────────────────────────────────────
+  deploy:
+    # skip this job entirely if the manual trigger was 'destroy'
+    if: github.event.inputs.action != 'destroy'
     runs-on: ubuntu-latest
     env:
       TF_IN_AUTOMATION: "true"
@@ -73,17 +107,29 @@ jobs:
             -var="container_image=nginx:latest" \
             -var="container_port=80"
 
-      - name: Terraform
-        run: |
-          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
-              terraform -chdir=terraform destroy -auto-approve
-          else
-              terraform -chdir=terraform apply -auto-approve tfplan
-          fi
+      - name: Terraform apply
+        id: apply                          # give it an id so we can reference its outcome below
+        run: terraform -chdir=terraform apply -auto-approve tfplan
 
       - name: Export Terraform outputs
+        # only runs if apply succeeded
+        if: steps.apply.outcome == 'success'
         run: |
           echo "ECR_REPOSITORY_URL=$(terraform -chdir=terraform output -raw ecr_repository_url)" >> "$GITHUB_ENV"
 
       - name: Run Taskfile
+        # only runs if apply succeeded
+        if: steps.apply.outcome == 'success'
         run: task ci
+
+      # ── cleanup on failure ──────────────────────────────────────────────
+      # Runs automatically if ANY earlier step failed.
+      # Destroys whatever was partially created so you don't leave
+      # orphaned resources running up a bill.
+      - name: Terraform destroy on failure
+        if: failure()                      # built-in condition: true when any prior step failed
+        run: |
+          echo "::warning::A step failed — destroying infrastructure to prevent orphaned resources"
+          terraform -chdir=terraform destroy -auto-approve \
+            -var="container_image=nginx:latest" \
+            -var="container_port=80"
