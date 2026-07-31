@@ -21,15 +21,15 @@ tasks:
     desc: "build and push docker image"
     cmds:
        - docker build -t full-ecs:latest .
-       - docker tag full-ecs:latest $ECR_REPOSITORY_URL/running-containers-fargate-app-repo:latest
-       - docker push $ECR_REPOSITORY_URL/running-containers-fargate-app-repo:latest
+       - docker tag full-ecs:latest $ECR_REPOSITORY_URL:latest
+       - docker push $ECR_REPOSITORY_URL:latest
     silent: true
 
   terraform-reapply:
     desc: "terraform reapply"
     cmds:
       - terraform -chdir=terraform apply -auto-approve  \ 
-       -var="container_image=$ECR_REPOSITORY_URL/running-containers-fargate-app-repo:latest" \ 
+       -var="container_image=$ECR_REPOSITORY_URL:latest" \ 
        -var="container_port=3000"
     silent: true
 
